@@ -72,6 +72,19 @@ function view(activity) {
   var isImage = false;  // These are also set by checkType()
   var isAudio = false;
   var installType;      // Wallpaper, ringtone or song.
+  var isDescriptor = true; // To acommodate direct download without a descriptor
+
+  if (activity.source.data.type == "application/vnd.oma.drm.message")
+  {
+    isDescriptor = false;
+    name = activity.source.data.url.substr(activity.source.data.url.lastIndexOf('/') + 1) 
+    descriptor.vendor = name;
+    descriptor.name = name;
+    descriptor.description = name;
+    descriptor.size = 0;
+    descriptor.objectURI = activity.source.data.url;
+  }
+
 
   function reportError(type, errorID, downloadStatus, details) {
     // Report to the console
@@ -128,7 +141,11 @@ function view(activity) {
   }
 
   // We start by downloading the url passed with the activity request
-  downloadDescriptor(activity.source.data.url);
+
+  if (isDescriptor)
+    downloadDescriptor(activity.source.data.url);
+  else 
+    displayDownloadProgress();
 
   // Step 1: download the download descriptor
   function downloadDescriptor(descriptorURL) {
@@ -346,18 +363,23 @@ function view(activity) {
   function displayDownloadProgress() {
     debug('Step 5: download content and display progress');
 
+    if (!isDescriptor)
+    {
+      var titleElement = $('direct-download-confirmation-title');
+      titleElement.textContent = _('download-progress-title');
+      $('direct-download').hidden = false;
+    }
+
     // Change the dialog title from Download? to Downloading...
     var titleElement = $('download-confirmation-title');
     titleElement.textContent = _('downloading-' + installType);
-
-    // Set the progress parameters and show the bar
     var bar = $('download-progress');
+
     bar.style.visibility = 'visible';
     bar.value = 0;
     bar.max = descriptor.size;
 
     debug('starting download for', descriptor.objectURI);
-
 
     var download = new XMLHttpRequest(systemXHR);
     download.open('GET', descriptor.objectURI);
@@ -372,6 +394,7 @@ function view(activity) {
     // It only happens sometimes. A caching thing? A bug in gecko?
     // There is no response body when this happends
     download.onerror = function() {
+      $('download-confirmation').hidden = true;
       reportError(DOWNLOAD_ERROR, ERR_CONTENT_DOWNLOAD_FAILED,
                   OMADownloadStatus.LOADER_ERROR,
                   download.status + ' ' + download.statusText);
@@ -380,6 +403,7 @@ function view(activity) {
     download.onload = function() {
       // We're done downloading, so we can't cancel it anymore
       $('download-cancel').disabled = true;
+      $('download-confirmation').hidden = true;
 
       // Move on to step 6
       extractContent(download.getResponseHeader('Content-Type'),
@@ -484,20 +508,55 @@ function view(activity) {
     // If the content we found in the DRM message (.dm) file has a different
     // Content-Type than what we were expecting based on the .dd file
     // report an error.
-    if (type !== mimeType) {
+    // CHANGED TO SUPPORT non-Descriptor
+    if ((isDescriptor) && (type !== mimeType)) {
       reportError(DOWNLOAD_ERROR, ERR_BAD_DRM_MESSAGE,
                   OMADownloadStatus.ATTRIBUTE_MISMATCH);
       return;
     }
 
-    switch (installType) {
-    case SONG:
-    case RINGTONE:
-      previewAudio(type, bytes);
-      return;
-    case WALLPAPER:
+    if (!isDescriptor)
+    {
+      if (type in SupportedImageTypes) {
+        mimeType = type;
+        isImage = true;
+      } else if (type in SupportedAudioTypes) {
+        mimeType = type;
+        isAudio = true;
+      }
+      else { 
+        reportError(DOWNLOAD_ERROR, ERR_UNSUPPORTED_TYPE,
+                    OMADownloadStatus.NON_ACCEPTABLE_CONTENT,
+                    type);
+        return;
+      }
+
+    }
+
+    if (isImage) {
+      installType = WALLPAPER;
       previewImage(type, bytes);
-      return;
+    }
+    else {
+      if (!isDescriptor)
+      {
+        showDialog({
+          message: _('ringtone-or-song-query'),
+          okText: _('ringtone-response'),
+          cancelText: _('song-response'),
+          okCallback: function() {
+            installType = RINGTONE;
+            previewAudio(type, bytes);
+          },
+          cancelCallback: function() {
+            installType = SONG;
+            previewAudio(type, bytes);
+          }
+        });
+      }
+      else {
+        previewAudio(type, bytes);
+      }
     }
   }
 
@@ -614,6 +673,7 @@ function view(activity) {
 
   function installSong(buffer) {
     debug('installSong');
+
     ForwardLock.getOrCreateKey(function(secret) {
       debug('got secret key');
       var blob = ForwardLock.lockBuffer(secret, buffer, mimeType, {
@@ -623,7 +683,7 @@ function view(activity) {
       });
       debug('encrypted song');
 
-      getStorageIfAvailable('music', descriptor.size,
+      getStorageIfAvailable('music', blob.size,
                             storageSuccess, storageError);
 
       function storageError(err) {
@@ -695,7 +755,8 @@ function view(activity) {
 
       req.onsuccess = function() {
         // Report that we've successfully saved the media.
-        sendStatus(OMADownloadStatus.SUCCESS);
+        if (isDescriptor)
+          sendStatus(OMADownloadStatus.SUCCESS);
 
         // Install this blob as the default ringtone or wallpaper
         // We assume that if the user is downloading this media they
