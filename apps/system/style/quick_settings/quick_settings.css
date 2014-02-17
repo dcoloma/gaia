@@ -138,10 +138,10 @@ html, body {
   background-image: url(images/airplane-mode-on.png);
 }
 #quick-settings-full-app {
-  background-image: url(images/flash_off.png);
+  background-image: url(images/settings-off.png);
 }
 #quick-settings-full-app:active {
-  background-image: url(images/flash_on.png);
+  background-image: url(images/settings-on.png);
 }
 .quick-settings-airplane-mode {
   opacity: 0.5;

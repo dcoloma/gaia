@@ -9,28 +9,29 @@ var QuickSettings = {
   geolocationEnabled: false,
   WIFI_STATUSCHANGE_TIMEOUT: 2000,
   // ID of elements to create references
-  ELEMENTS: ['wifi', 'data', 'bluetooth', 'airplane-mode', 'full-app'],
+  ELEMENTS: ['wifi', 'data', 'bluetooth', 'airplane-mode', 'full-app', 'flash'],
 
   init: function qs_init() {
     console.log("XXX Inicializando");
 
     var cameras = navigator.mozCameras.getListOfCameras();
     var count = cameras.length;
-    console.log('XXX number of cameras: ' + count);
     if (count > 0) {
-      console.log("XXX Main Camera ");
       navigator.mozCameras.getCamera({
         camera: cameras[0]
       }, function(camera){
-           console.log("XXX getCamera callback");
-
            var flashmodes = camera.capabilities.flashModes;
-
            flashmodes.forEach(function (value) {
-             console.log("XXX flashmode value " + value)
-             if (value == "torch"){
-               console.log("XXX Found Torch")
-               window.mycamera = camera;
+             if (value == "torch")
+             {
+               window.torchcamera = camera; 
+               console.log("there is torch");
+               document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
+               console.log("there is torch2");
+             }
+             else
+             {
+               window.torchcamera = null; 
              }
            });
          });
@@ -215,28 +216,50 @@ var QuickSettings = {
             break;
 
           case this.fullApp:
-            console.log("XXX Click on Torch");
-            if (window.mycamera != null)
+            console.log("XXXXXXX fullApp");
+            if (window.torchcamera != null)
             {
-              if (window.mycamera.flashMode == "torch")
+              if (window.torchcamera.flashMode == "torch")
               {
-                window.mycamera.flashMode = "off";
+                window.torchcamera.flashMode = "off";
+                console.log("Showing off icon");
                 document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
               }
               else
               {
-                window.mycamera.flashMode = "torch";
+                window.torchcamera.flashMode = "torch";
+                console.log("Showing on icon");
                 document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_on.png')";
               }
             }
+            else
+            {
             // XXX: This should be replaced probably by Web Activities
-            //var host = document.location.host;
-            //var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
-            //var protocol = document.location.protocol + '//';
-            //Applications.getByManifestURL(protocol + 'settings.' +
-                                          //domain + '/manifest.webapp').launch();
+            var host = document.location.host;
+            var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
+            var protocol = document.location.protocol + '//';
+            Applications.getByManifestURL(protocol + 'settings.' +
+                                          domain + '/manifest.webapp').launch();
 
-            //UtilityTray.hide();
+            UtilityTray.hide();
+            }
+            break;
+
+          case this.flash:
+            console.log("XXXXXXX flash");
+            if (window.torchcamera != null)
+            {
+              if (window.torchcamera.flashMode == "torch")
+              {
+                window.torchcamera.flashMode = "off";
+                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
+              }
+              else
+              {
+                window.torchcamera.flashMode = "torch";
+                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_on.png')";
+              }
+            }
             break;
         }
         break;
