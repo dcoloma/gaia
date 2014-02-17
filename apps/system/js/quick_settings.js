@@ -3,6 +3,7 @@
 
 'use strict';
 
+
 var QuickSettings = {
   // Indicate setting status of geolocation.enabled
   geolocationEnabled: false,
@@ -11,6 +12,30 @@ var QuickSettings = {
   ELEMENTS: ['wifi', 'data', 'bluetooth', 'airplane-mode', 'full-app'],
 
   init: function qs_init() {
+    console.log("XXX Inicializando");
+
+    var cameras = navigator.mozCameras.getListOfCameras();
+    var count = cameras.length;
+    console.log('XXX number of cameras: ' + count);
+    if (count > 0) {
+      console.log("XXX Main Camera ");
+      navigator.mozCameras.getCamera({
+        camera: cameras[0]
+      }, function(camera){
+           console.log("XXX getCamera callback");
+
+           var flashmodes = camera.capabilities.flashModes;
+
+           flashmodes.forEach(function (value) {
+             console.log("XXX flashmode value " + value)
+             if (value == "torch"){
+               console.log("XXX Found Torch")
+               window.mycamera = camera;
+             }
+           });
+         });
+    }
+
     var settings = window.navigator.mozSettings;
 
     // XXX: check bug-926169
@@ -185,18 +210,33 @@ var QuickSettings = {
             break;
 
           case this.airplaneMode:
+            console.log("Click on Airplane Mode");
             AirplaneMode.enabled = !this.airplaneMode.dataset.enabled;
             break;
 
           case this.fullApp:
+            console.log("XXX Click on Torch");
+            if (window.mycamera != null)
+            {
+              if (window.mycamera.flashMode == "torch")
+              {
+                window.mycamera.flashMode = "off";
+                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
+              }
+              else
+              {
+                window.mycamera.flashMode = "torch";
+                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_on.png')";
+              }
+            }
             // XXX: This should be replaced probably by Web Activities
-            var host = document.location.host;
-            var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
-            var protocol = document.location.protocol + '//';
-            Applications.getByManifestURL(protocol + 'settings.' +
-                                          domain + '/manifest.webapp').launch();
+            //var host = document.location.host;
+            //var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
+            //var protocol = document.location.protocol + '//';
+            //Applications.getByManifestURL(protocol + 'settings.' +
+                                          //domain + '/manifest.webapp').launch();
 
-            UtilityTray.hide();
+            //UtilityTray.hide();
             break;
         }
         break;
@@ -293,6 +333,8 @@ var QuickSettings = {
     }
   }
 };
+
+
 
 if (navigator.mozL10n &&
     (navigator.mozL10n.readyState == 'complete' ||
