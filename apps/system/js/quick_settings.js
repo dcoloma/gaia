@@ -12,8 +12,6 @@ var QuickSettings = {
   ELEMENTS: ['wifi', 'data', 'bluetooth', 'airplane-mode', 'full-app', 'flash'],
 
   init: function qs_init() {
-    console.log("XXX Inicializando");
-
     var cameras = navigator.mozCameras.getListOfCameras();
     var count = cameras.length;
     if (count > 0) {
@@ -22,15 +20,12 @@ var QuickSettings = {
       }, function(camera){
            var flashmodes = camera.capabilities.flashModes;
            flashmodes.forEach(function (value) {
-             if (value == "torch")
-             {
+             if (value == "torch") {
                window.torchcamera = camera; 
-               console.log("there is torch");
-               document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
-               console.log("there is torch2");
+               document.getElementById("quick-settings-full-app").style.display = "none";
+               document.getElementById("quick-settings-flash").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
              }
-             else
-             {
+             else {
                window.torchcamera = null; 
              }
            });
@@ -216,24 +211,6 @@ var QuickSettings = {
             break;
 
           case this.fullApp:
-            console.log("XXXXXXX fullApp");
-            if (window.torchcamera != null)
-            {
-              if (window.torchcamera.flashMode == "torch")
-              {
-                window.torchcamera.flashMode = "off";
-                console.log("Showing off icon");
-                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
-              }
-              else
-              {
-                window.torchcamera.flashMode = "torch";
-                console.log("Showing on icon");
-                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_on.png')";
-              }
-            }
-            else
-            {
             // XXX: This should be replaced probably by Web Activities
             var host = document.location.host;
             var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
@@ -242,23 +219,18 @@ var QuickSettings = {
                                           domain + '/manifest.webapp').launch();
 
             UtilityTray.hide();
-            }
             break;
 
           case this.flash:
-            console.log("XXXXXXX flash");
-            if (window.torchcamera != null)
-            {
-              if (window.torchcamera.flashMode == "torch")
-              {
-                window.torchcamera.flashMode = "off";
-                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
-              }
-              else
-              {
-                window.torchcamera.flashMode = "torch";
-                document.getElementById("quick-settings-full-app").style.backgroundImage ="url('../style/quick_settings/images/flash_on.png')";
-              }
+            if (window.torchcamera.flashMode == "torch") {
+              window.torchcamera.flashMode = "off";
+              this.flash.style.backgroundImage =
+                "url('../style/quick_settings/images/flash_off.png')";
+            }
+            else {
+              window.torchcamera.flashMode = "torch";
+              this.flash.style.backgroundImage =
+                "url('../style/quick_settings/images/flash_on.png')";
             }
             break;
         }
