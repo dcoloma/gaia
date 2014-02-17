@@ -145,9 +145,11 @@ html, body {
 }
 #quick-settings-flash {
   background-image: url(images/flash_off.png);
+  background-color: transparent;
 }
-#quick-settings-flash:active {
+#quick-settings-flash[torch="true"] {
   background-image: url(images/flash_on.png);
+  background-color: #00AACC;
 }
 .quick-settings-airplane-mode {
   opacity: 0.5;

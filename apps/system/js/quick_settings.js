@@ -14,6 +14,7 @@ var QuickSettings = {
   init: function qs_init() {
     var cameras = navigator.mozCameras.getListOfCameras();
     var count = cameras.length;
+    window.torchCamera = null;
     if (count > 0) {
       navigator.mozCameras.getCamera({
         camera: cameras[0]
@@ -23,10 +24,6 @@ var QuickSettings = {
              if (value == "torch") {
                window.torchcamera = camera; 
                document.getElementById("quick-settings-full-app").style.display = "none";
-               document.getElementById("quick-settings-flash").style.backgroundImage ="url('../style/quick_settings/images/flash_off.png')";
-             }
-             else {
-               window.torchcamera = null; 
              }
            });
          });
@@ -224,13 +221,11 @@ var QuickSettings = {
           case this.flash:
             if (window.torchcamera.flashMode == "torch") {
               window.torchcamera.flashMode = "off";
-              this.flash.style.backgroundImage =
-                "url('../style/quick_settings/images/flash_off.png')";
+              this.flash.setAttribute("torch", "false");
             }
             else {
               window.torchcamera.flashMode = "torch";
-              this.flash.style.backgroundImage =
-                "url('../style/quick_settings/images/flash_on.png')";
+              this.flash.setAttribute("torch", "true");
             }
             break;
         }
